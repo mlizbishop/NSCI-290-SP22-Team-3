@@ -1,0 +1,269 @@
+pip install allensdk
+import os
+import shutil
+import allensdk
+import pprint
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import scipy.stats as st
+
+import matplotlib.pyplot as plt
+%matplotlib inline
+import seaborn as sns
+sns.set_context('notebook', font_scale=1.5, rc={'lines.markeredgewidth': 2})
+
+drive_path = '/overflow/NSCI274/projects/BrainObservatoryOPhysData/'
+
+manifest_file = os.path.join(drive_path,'manifest.json')
+
+boc = BrainObservatoryCache(manifest_file=manifest_file)
+boc.get_all_stimuli()
+
+cells = boc.get_cell_specimens()
+cells = pd.DataFrame.from_records(cells)
+print("total cells: %d" % len(cells))
+cells.head()
+
+new_cell_df = cells[['cell_specimen_id', 'area' ,'rf_area_off_lsn','rf_area_on_lsn', 'rf_chi2_lsn', 'rf_distance_lsn', 'rf_center_off_x_lsn', 'rf_center_off_y_lsn' ,'rf_center_on_x_lsn' ,'rf_center_on_y_lsn']]
+new_cell_df.head()
+
+## 2B.  NUMBER OF CELLS WHERE LSN DATA WAS COLLECTED PER VISUAL AREA
+
+visp_cell_df = new_cell_df[new_cell_df['area'] == 'VISp']
+visp_cell_df.head()
+
+lat_cell_df = new_cell_df[new_cell_df['area'] == 'VISl']
+lat_cell_df.head()
+
+al_cell_df = new_cell_df[new_cell_df['area'] == 'VISal']
+al_cell_df.head()
+
+pm_cell_df = new_cell_df[new_cell_df['area'] == 'VISpm']
+pm_cell_df.head()
+
+rl_cell_df = new_cell_df[new_cell_df['area'] == 'VISrl']
+rl_cell_df.head()
+
+am_cell_df = new_cell_df[new_cell_df['area'] == 'VISam']
+am_cell_df.head()
+
+am_cell_count = len(am_cell_df.index)
+rl_cell_count = len(rl_cell_df.index)
+pm_cell_count = len(pm_cell_df.index)
+al_cell_count = len(al_cell_df.index)
+lm_cell_count = len(lat_cell_df.index)
+v1_cell_count = len(visp_cell_df.index)
+print ('There is locally sparse noise data collected from', am_cell_count, 'cells in the Anteromedial visual area')
+print ('There is locally sparse noise data collected from', rl_cell_count, 'cells in the Rostrolateral visual area')
+print ('There is locally sparse noise data collected from', pm_cell_count, 'cells in the Posteromedial visual area')
+print ('There is locally sparse noise data collected from', al_cell_count, 'cells in the Anterolateral visual area')
+print ('There is locally sparse noise data collected from', lm_cell_count, 'cells in the Lateral visual area')
+print ('There is locally sparse noise data collected from', v1_cell_count, 'cells in the Primary visual area')
+
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+ax.set_xlabel("Areas of Visual Cortex")
+ax.set_ylabel("Cells with LSN Data")
+areas = ['AM', 'RL', 'PM', 'AL', 'LM', 'V1']
+cell_count = [am_cell_count,rl_cell_count,pm_cell_count,al_cell_count,lm_cell_count, v1_cell_count]
+ax.bar(areas,cell_count)
+plt.show()
+
+# V1 VS LM RF AREA
+
+# V1 VS LM RF AREA
+# V1 VS LM RF AREA
+v1_avg_area_on = visp_cell_df["rf_area_on_lsn"].mean()
+v1_avg_area_on
+
+v1_stdev_avg_area_on = visp_cell_df["rf_area_on_lsn"].std()
+v1_stdev_avg_area_on
+
+lm_avg_area_on = lat_cell_df["rf_area_on_lsn"].mean()
+lm_avg_area_on
+
+lm_stdev_avg_area_on = lat_cell_df["rf_area_on_lsn"].std()
+lm_stdev_avg_area_on
+
+v1_avg_area_off = visp_cell_df["rf_area_off_lsn"].mean()
+v1_avg_area_off 
+
+v1_stdev_avg_area_off = visp_cell_df["rf_area_off_lsn"].std()
+v1_stdev_avg_area_off
+
+lm_avg_area_off = lat_cell_df["rf_area_off_lsn"].mean()
+lm_avg_area_off 
+
+lm_stdev_avg_area_off = lat_cell_df["rf_area_off_lsn"].std()
+lm_stdev_avg_area_off
+
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+ax.set_xlabel("Regions of Visual Cortex")
+ax.set_ylabel("Average Area of ON RF")
+regions = [ 'V1','LM']
+avg_area_on = [v1_avg_area_on, lm_avg_area_on]
+ax.bar(regions , avg_area_on)
+plt.show()
+
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_axes([0,0,1,1])
+ax.set_xlabel("Regions of Visual Cortex")
+ax.set_ylabel("Average Area of OFF RF")
+regions = [ 'V1','LM']
+avg_area_off = [v1_avg_area_off, lm_avg_area_off]
+ax.bar(regions , avg_area_off)
+plt.show()
+
+### Cells with signifigant responses considered to have a receptive field
+v1_sig_df= visp_cell_df[visp_cell_df['rf_chi2_lsn'] <= .05]
+v1_sig_df.head()
+
+lm_sig_df= lat_cell_df[lat_cell_df['rf_chi2_lsn'] <= .05]
+lm_sig_df.head()
+
+sig_cell_count_lm= len(lm_sig_df.index)
+sig_cell_count_lm
+
+sig_cell_count_v1= len(v1_sig_df.index)
+sig_cell_count_v1
+
+v1_area_on_max = v1_sig_df["rf_area_on_lsn"].max()
+v1_area_on_max
+
+lm_area_on_max = lm_sig_df["rf_area_on_lsn"].max()
+lm_area_on_max
+
+v1_area_on_min = v1_sig_df["rf_area_on_lsn"].min()
+v1_area_on_min
+
+lm_area_on_min = lm_sig_df["rf_area_on_lsn"].min()
+lm_area_on_min
+
+v1_area_off_max = v1_sig_df["rf_area_off_lsn"].max()
+v1_area_off_max
+
+lm_area_off_max = lm_sig_df["rf_area_off_lsn"].max()
+lm_area_off_max
+
+v1_area_off_min = v1_sig_df["rf_area_off_lsn"].min()
+v1_area_off_min
+
+lm_area_off_min = lm_sig_df["rf_area_off_lsn"].min()
+lm_area_off_min
+
+v1_area_on = v1_sig_df["rf_area_on_lsn"]
+v1_area_on.head()
+
+v1_area_off = v1_sig_df["rf_area_off_lsn"]
+v1_area_off.head()
+
+lm_area_off = lm_sig_df["rf_area_off_lsn"]
+lm_area_off.head()
+
+lm_area_on = lm_sig_df["rf_area_on_lsn"]
+lm_area_on.head()
+
+quartile_v1_on = v1_sig_df.rf_area_on_lsn.quantile([0.25,0.5,0.75])
+quartile_v1_on
+
+quartile_lm_on = lm_sig_df.rf_area_on_lsn.quantile([0.25,0.5,0.75])
+quartile_lm_on
+
+quartile_v1_off = v1_sig_df.rf_area_off_lsn.quantile([0.25,0.5,0.75])
+quartile_v1_off
+
+quartile_lm_off = lm_sig_df.rf_area_off_lsn.quantile([0.25,0.5,0.75])
+quartile_lm_off
+
+v1_sig_avg_area_on = v1_sig_df["rf_area_on_lsn"].mean()
+v1_sig_avg_area_on
+v1_sig_std_area_on = v1_sig_df["rf_area_on_lsn"].std()
+v1_sig_std_area_on
+
+v1_sig_avg_area_off = v1_sig_df["rf_area_off_lsn"].mean()
+v1_sig_avg_area_off
+v1_sig_std_area_off = v1_sig_df["rf_area_off_lsn"].std()
+v1_sig_std_area_off
+
+lm_sig_avg_area_on = lm_sig_df["rf_area_on_lsn"].mean()
+lm_sig_avg_area_on
+lm_sig_std_area_on = lm_sig_df["rf_area_on_lsn"].std()
+lm_sig_std_area_on
+
+lm_sig_avg_area_off = lm_sig_df["rf_area_off_lsn"].mean()
+lm_sig_avg_area_off
+lm_sig_std_area_off = lm_sig_df["rf_area_off_lsn"].std()
+lm_sig_std_area_off
+
+
+
+# DATA TO EXCEL
+datatoexcel = lm_area_on.to_excel('/nas/longleaf/home/mlbishop/export_dataframe.xlsx', index = False, header=True)
+datatoexcel = pd.excelWriter('LM AREA ON.xlsx')
+  
+# write DataFrame to excel
+lm_area_on.to_csv(datatoexcel)
+  
+# save the excel
+datatoexcel.save()
+
+datatoexcel = v1_area_on.to_excel('/nas/longleaf/home/mlbishop/export_dataframe.xlsx', index = False, header=True)
+datatoexcel = pd.excelWriter('V1 AREA ON.xlsx')
+  
+# write DataFrame to excel
+v1_area_on.to_excel(datatoexcel)
+  
+# save the excel
+datatoexcel.save()
+
+datatoexcel = lm_area_off.to_excel('/nas/longleaf/home/mlbishop/export_dataframe.xlsx', index = False, header=True)
+datatoexcel = pd.excelWriter('LM AREA OFF.xlsx')
+  
+# write DataFrame to excel
+lm_area_off.to_excel(datatoexcel)
+  
+# save the excel
+datatocsv.save()
+
+datatoexcel = v1_area_off.to_excel('/nas/longleaf/home/mlbishop/export_dataframe.xlsx', index = False, header=True)
+datatoexcel = pd.excelWriter('LM AREA ON.csv')
+  
+# write DataFrame to excel
+v1_area_off.to_excel(datatoexcel)
+  
+# save the excel
+datatocsv.save()
+
+# CENTERS OF RFAS
+
+v1_avg_cent_on_x = v1_sig_df["rf_center_on_x_lsn"].mean()
+v1_avg_cent_on_x
+
+v1_avg_cent_on_y = v1_sig_df["rf_center_on_y_lsn"].mean()
+v1_avg_cent_on_y
+
+v1_avg_cent_off_x = v1_sig_df["rf_center_off_x_lsn"].mean()
+v1_avg_cent_off_x
+
+v1_avg_cent_off_y = v1_sig_df["rf_center_on_y_lsn"].mean()
+v1_avg_cent_off_y
+
+
+lm_avg_cent_on_x = lm_sig_df["rf_center_on_x_lsn"].mean()
+lm_avg_cent_on_x
+
+lm_avg_cent_on_y = lm_sig_df["rf_center_on_y_lsn"].mean()
+lm_avg_cent_on_y
+
+lm_avg_cent_off_x = lm_sig_df["rf_center_off_x_lsn"].mean()
+lm_avg_cent_off_x
+
+lm_avg_cent_off_y = lm_sig_df["rf_center_on_y_lsn"].mean()
+lm_avg_cent_off_y
+
